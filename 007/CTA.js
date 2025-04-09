@@ -20,6 +20,8 @@ class CTA extends Phaser.Scene {
         this.winSnd = this.sound.add("win").setVolume(0.3);
         this.winSnd.play()
         }
+        console.log("*** CTA scene");
+        this.scene.bringToTop("CTA");
     const howplay = this.add.image(0, 0, 'CTA');
 
 const scaleX = this.game.config.width / howplay.width;

@@ -42,6 +42,7 @@ class level1 extends Phaser.Scene {
 
   create() {
     console.log("*** level1 scene");
+    window.heart = 3; 
     this.shootSnd = this.sound.add("shoot").setVolume(0.5);
     this.hurtSnd = this.sound.add("hurt").setVolume(0.5);
 

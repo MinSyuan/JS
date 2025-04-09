@@ -45,35 +45,44 @@ class gameOver extends Phaser.Scene {
     
     // Check for spacebar or any key here
     let enterDown = this.input.keyboard.addKey("SPACE");
-  
-    // On spacebar event, call the main scene
     enterDown.on("down", function () {
       console.log("Spacebar pressed, go to main");
       window.heart = 3;
       this.scene.start("main"); 
     }, this );
 }
-// scaleGameOverImage() {
+} 
+//     spaceDown.on('down', function() {
+//         this.restart();
+//     }, this);
+// }
 
-//   if (!this.gameOverImage) {
-//     console.error("gameOverImage 未定义！");
-//     return;
-  // }
-  // Get screen dimensions
-//   const gameOverImage = this.add.image(
-//     gameWidth / 2,
-//     gameHeight / 2,
-//     "gameOverImg"
-// );
+// restart() {
+//     // Stop any active scenes
+//     this.scene.stop('showInventory');
+//     this.scene.stop(this.levelToRestart);
+    
+//     // Start fresh at the level they died on
+//     this.scene.start(this.levelToRestart);
 
-  
-  // Calculate scale while maintaining aspect ratio
-//   const scale = Math.min(
-//     (gameWidth * 0.8) / gameOverImage.width,
-//     (gameHeight * 0.8) / gameOverImage.height
-// );
-  
-//   // Apply the scale
-//   this.gameOverImage.setScale(scale);
-//   }
-}
+// if (window.heart <= 0) {
+//   console.log("*** player gameOver");
+//   this.scene.stop("level1");
+//   this.scene.start("gameOver", { level: "level1" });
+//   console.log("*** gameOver scene started");
+// }
+
+// // In level2.js when transitioning to game over
+// if (window.heart <= 0) {
+//   console.log("*** player gameOver");
+//   this.scene.stop("level2");
+//   this.scene.start("gameOver", { level: "level2" });
+//   console.log("*** gameOver scene started");
+// }
+// // In level3.js when transitioning to game over
+// if (window.heart <= 0) {
+//   console.log("*** player gameOver");
+//   this.scene.stop("level3");
+//   this.scene.start("gameOver", { level: "level3" });
+//   console.log("*** gameOver scene started");
+// }
