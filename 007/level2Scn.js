@@ -1,18 +1,18 @@
-class level1SCN extends Phaser.Scene {
+class level2SCN extends Phaser.Scene {
 
     constructor ()
     {
-        super({ key: 'level1SCN' });
+        super({ key: 'level2SCN' });
     }
 
     preload() {
 
         // Images
-         this.load.image("lvlSCN", "asset/level1scn.jpg");
+         this.load.image("lvl2SCN", "asset/level2scn.jpg");
     }
 
     create () {
-    const howplay = this.add.image(0, 0, 'lvlSCN');
+    const howplay = this.add.image(0, 0, 'lvl2SCN');
 
 const scaleX = this.game.config.width / howplay.width;
 const scaleY = this.game.config.height / howplay.height;
@@ -27,8 +27,8 @@ howplay.setPosition(this.game.config.width / 2, this.game.config.height /2);
         var spaceDown = this.input.keyboard.addKey('SPACE');
         
         spaceDown.on('down', function(){
-            console.log("Spacebar pressed, go to level1");
-            this.scene.start("level1"); 
+            console.log("Spacebar pressed, go to level2");
+            this.scene.start("level2"); 
         }, this );
 
     }

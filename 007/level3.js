@@ -3,6 +3,10 @@ class level3 extends Phaser.Scene {
       super({
         key: "level3",
       });
+      this.enemies = []; 
+    this.enemiesDefeated = 0; 
+    this.totalEnemies = 5;
+    this.isPlayerInvulnerable = false    
   
       // Put global variable here
     }
@@ -11,13 +15,16 @@ class level3 extends Phaser.Scene {
       // Step 1, load JSON
       console.log("Loading JSON:", "asset/level3map.json");
       this.load.tilemapTiledJSON("level3", "asset/level3map.json");
-  
+      this.load.audio('shoot', 'asset/submachine-gun-79846.mp3');
+      this.load.audio('hurt', 'asset/hurt.mp3');
+
       
   
       // Step 2 : Preload any images here
       //this.load.image("building", "assets/Buildings32x32.png");
       //this.load.image("street", "assets/Street32x32.png");
   
+      this.load.image("gameOverImg", "asset/gameover.jpg");
       this.load.image("museumImg", "asset/22_Museum_32x32.png")
       this.load.image("grassImg", "asset/forest_tiles.png")
       this.load.image("decoImg", "asset/gather_plants_1.2.png")
@@ -25,12 +32,15 @@ class level3 extends Phaser.Scene {
       this.load.image("treeImg", "asset/trees-green.png")
       this.load.spritesheet("jojo","asset/maincharacter.png",{ frameWidth:64, frameHeight:64 })
       this.load.spritesheet("robber","asset/enemy.png",{ frameWidth:64, frameHeight:64 })
+      this.load.spritesheet("bulletImg", "asset/knife-32x32.png", { frameWidth: 32,frameHeight: 32 });
+
     }
   
     create() {
       console.log("*** level3 scene");
-      this.cursors = this.input.keyboard.createCursorKeys();
-  
+      this.shootSnd = this.sound.add("shoot").setVolume(0.5);
+      this.hurtSnd = this.sound.add("hurt").setVolume(0.5);
+
       //Step 3 - Create the map from main
       //let map = this.make.tilemap({ key: "world1" });
       let map = this.make.tilemap({ key: "level3" })
@@ -65,6 +75,8 @@ class level3 extends Phaser.Scene {
       this.rockroadLayer = map.createLayer("rockroadLayer",tilesArray,0,0)
       this.grassLayer = map.createLayer("grassLayer",tilesArray,0,0)
       this.decoLayer = map.createLayer("decoLayer",tilesArray,0,0)
+      this.borderLayer = map.createLayer("borderLayer",tilesArray,0,0);
+
   
       //objectLayer
       let start = map.findObject("objectLayer", obj => obj.name === "start");
@@ -140,7 +152,12 @@ class level3 extends Phaser.Scene {
         repeat: -1,
       });
       
-    this.enemy1 = this.add.sprite(500,850,'robber').play('robber-right')
+    this.enemy1 = this.physics.add.sprite(500,850,'robber').play('robber-right')
+    this.enemy2 = this.physics.add.sprite(150,150,'robber').play('robber-right')
+    this.enemy3 = this.physics.add.sprite(1100,800,'robber').play('robber-right')
+    this.enemy4 = this.physics.add.sprite(1400,500,'robber').play('robber-right')
+    this.enemy5 = this.physics.add.sprite(850,350,'robber').play('robber-right')
+    this.enemies = [this.enemy1, this.enemy2, this.enemy3, this.enemy4, this.enemy5];
     this.tweens.add({
         targets: this.enemy1,
         x: 750,
@@ -150,7 +167,6 @@ class level3 extends Phaser.Scene {
         repeat: -1
     })
 
-    this.enemy2 = this.add.sprite(150,150,'robber').play('robber-right')
     this.tweens.add({
         targets: this.enemy2,
         x: 300,
@@ -160,7 +176,6 @@ class level3 extends Phaser.Scene {
         repeat: -1
     })
 
-    this.enemy3 = this.add.sprite(1100,800,'robber').play('robber-right')
     this.tweens.add({
         targets: this.enemy3,
         x: 1350,
@@ -170,7 +185,6 @@ class level3 extends Phaser.Scene {
         repeat: -1
     })
 
-    this.enemy4 = this.add.sprite(1400,500,'robber').play('robber-right')
     this.tweens.add({
         targets: this.enemy4,
         x: 1600,
@@ -180,7 +194,6 @@ class level3 extends Phaser.Scene {
         repeat: -1
     })
 
-    this.enemy5 = this.add.sprite(850,350,'robber').play('robber-right')
     this.tweens.add({
         targets: this.enemy5,
         x: 1250,
@@ -189,9 +202,17 @@ class level3 extends Phaser.Scene {
         duration: 3000,
         repeat: -1
     })
+    
+    this.borderLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.borderLayer);
 
+    this.grassLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.grassLayer);
 
-     // livebar
+    this.decoLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.decoLayer);
+
+ // livebar
  // Call to update inventory items
  this.time.addEvent({
   delay: 100,
@@ -199,17 +220,27 @@ class level3 extends Phaser.Scene {
   callbackScope: this,
   loop: false,
 });
-
 // start another scene in parallel
 this.scene.launch("showInventory");
 
 this.physics.add.overlap(
   this.player,
-  [this.enemy1, this.enemy2, this.enemy3,this.enemy4,this.enemy5],
-  globalHitFire,
+  this.enemies,
+  this.playerHitByEnemy,
   null,
   this
 );
+
+// // start another scene in parallel
+// this.scene.launch("showInventory");
+
+// this.physics.add.overlap(
+//   this.player,
+//   [this.enemy1, this.enemy2, this.enemy3,this.enemy4,this.enemy5],
+//   globalHitFire,
+//   null,
+//   this
+// );
 
   // player shoot
     // knive animation
@@ -223,13 +254,16 @@ this.physics.add.overlap(
     this.bullet = this.physics.add.sprite(
       this.player.x,
       this.player.y,
-      "buletImg"
+      "bulletImg"
     ). play("knifeAnim")    
 
     this.bullet.setVisible(false);
+    this.bullet.body.setEnable(false); 
 
     let attackLeft = this.input.keyboard.addKey("z");
     let attackRight = this.input.keyboard.addKey("x");
+    let attackUp = this.input.keyboard.addKey("a");
+    let attackDown = this.input.keyboard.addKey("s");
 
     attackLeft.on(
       "down",
@@ -246,6 +280,15 @@ this.physics.add.overlap(
       },
       this
     );
+
+    attackUp.on("down", function () {
+      this.attackUp();
+    }, this);
+    
+    attackDown.on("down", function () {
+      this.attackDown();
+    }, this);
+
 
     this.physics.add.overlap(
       this.bullet,
@@ -287,7 +330,7 @@ key1.on('down', function(){
       let speed = 300;
       this.player.setVelocity(0);
   
-      if (this.cursors.left.isDown) {
+       if (this.cursors.left.isDown) {
         this.player.body.setVelocityX(-speed);
         this.player.anims.play("jojo-left", true); // walk left
       } else if (this.cursors.right.isDown) {
@@ -303,7 +346,156 @@ key1.on('down', function(){
         this.player.anims.stop();
         this.player.body.setVelocity(0, 0);
       }
+
+      
+    if (this.cursors.left.isDown) {
+      console.log("Left key pressed");
+    } else if (this.cursors.right.isDown) {
+      console.log("Right key pressed");
+    } else if (this.cursors.up.isDown) {
+      console.log("Up key pressed");
+    } else if (this.cursors.down.isDown) {
+      console.log("Down key pressed");
+    }
+
+  }attackLeft() {
+    
+    console.log("attack left");
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+
+	  // speed of the bullet
+    this.bullet.body.setVelocityX(-500);
   }
+  attackRight() {
+    
+    console.log("attack right");
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+
+	  // speed of the bullet
+    this.bullet.body.setVelocityX(500);
+  }
+
+  attackUp() {
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+    this.bullet.body.setVelocityY(-500);
+    this.time.delayedCall(1000, () => {
+      this.bullet.setVisible(false);
+      this.bullet.body.setEnable(false);
+      this.bullet.setVelocity(0, 0);
+    }, [], this);
+  }
+  attackDown() {
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+    this.bullet.body.setVelocityY(500);
+    this.time.delayedCall(1000, () => {
+      this.bullet.setVisible(false);
+      this.bullet.body.setEnable(false);
+      this.bullet.setVelocity(0, 0);
+    }, [], this);
+  }
+
+  playerHitByEnemy(player, enemy) {
+    this.hurtSnd.play()
+
+    if (this.isPlayerInvulnerable) return;
+    
+    if (window.heart > 0) {
+      window.heart -= 1;
+      updateInventory.call(this);
+
+      this.cameras.main.shake(300);
+
+      this.invEvent = function(event, data) {
+        const showInventoryScene = this.scene.get('showInventory');
+        if (showInventoryScene) {
+            showInventoryScene.events.emit(event, data);
+        }
+    }.bind(this);
+
+    
+    this.invEvent("inventory", { heart: window.heart });
+        
+    this.isPlayerInvulnerable = true;
+    player.setTint(0xff0000);
+    
+    const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+    const knockbackForce = 200;
+    player.setVelocity(
+      Math.cos(angle) * knockbackForce,
+      Math.sin(angle) * knockbackForce
+    );
+    this.time.delayedCall(1000, () => {
+      this.isPlayerInvulnerable = false;
+      player.clearTint();
+    });
+
+  }
+
+  if (window.heart <= 0) {
+    console.log("*** player gameOver");
+    this.scene.stop("level3"); 
+    this.scene.start("gameOver");
+    console.log("*** gameOver scene started");
+
+  }
+}
+
+
+  killenemy(bullet, enemy){
+    console.log("bullet hit enemy");
+    this.cameras.main.shake(300);    
+    enemy.disableBody (true, true);
+    this.enemiesDefeated++;
+    if (this.enemiesDefeated >= this.totalEnemies) {
+      this.allEnemiesDefeated();
+    }
+  }
+
+  // play a sound
+  // this.hitSnd.play()
+  
+  allEnemiesDefeated() {
+    console.log("All enemies defeated! Proceeding to next level...");
+    this.cameras.main.flash(300, 255, 255, 255);
+    
+    this.time.delayedCall(1000, () => {
+      this.scene.start("CTA", {
+        playerHealth: window.heart,
+        inventory: this.inventory
+      });
+    });
+  }
+
+  // Function to jump to CTA
+CTA(player, enemy) {
+// this.music.stop{}
+this.scene.start("CTA", {
+  player: player,
+  inventory: this.inventory,
+});
+}
       }
     
     

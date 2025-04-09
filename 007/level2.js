@@ -3,7 +3,10 @@ class level2 extends Phaser.Scene {
       super({
         key: "level2",
       });
-  
+      this.enemies = []; 
+      this.enemiesDefeated = 0; 
+      this.totalEnemies = 4;
+      this.isPlayerInvulnerable = false    
       // Put global variable here
     }
   
@@ -11,13 +14,15 @@ class level2 extends Phaser.Scene {
       // Step 1, load JSON
       console.log("Loading JSON:", "asset/level2map.json");
       this.load.tilemapTiledJSON("level2", "asset/level2map.json");
-  
-      
-  
+      this.load.audio('shoot', 'asset/submachine-gun-79846.mp3');
+      this.load.audio('hurt', 'asset/hurt.mp3');
+
+
       // Step 2 : Preload any images here
       //this.load.image("building", "assets/Buildings32x32.png");
       //this.load.image("street", "assets/Street32x32.png");
-  
+      
+      this.load.image("gameOverImg", "asset/gameover.jpg");
       this.load.image("museumImg", "asset/22_Museum_32x32.png")
       this.load.image("floorImg", "asset/Carpet.png")
       this.load.image("wallImg", "asset/walltexture.png")
@@ -30,8 +35,9 @@ class level2 extends Phaser.Scene {
   
     create() {
       console.log("*** level2 scene");
-      this.cursors = this.input.keyboard.createCursorKeys();
-  
+      this.shootSnd = this.sound.add("shoot").setVolume(0.5);
+      this.hurtSnd = this.sound.add("hurt").setVolume(0.5);
+
       //Step 3 - Create the map from main
       //let map = this.make.tilemap({ key: "world1" });
       let map = this.make.tilemap({ key: "level2" })
@@ -48,13 +54,7 @@ class level2 extends Phaser.Scene {
       let artTiles = map.addTilesetImage("7_Art_32x32","artImg")
       let doorTiles = map.addTilesetImage("trimsanddoors","doorImg")
 
-  
-  
       // Step 5  create an array of tiles
-      // let tilesArray = [
-      //   buildingTiles,
-      //   streetTiles,
-      // ];
   
       let tilesArray =[museumTiles,floorTiles,wallTiles,artTiles,doorTiles]
   
@@ -67,6 +67,8 @@ class level2 extends Phaser.Scene {
       this.wallLayer = map.createLayer("wallLayer",tilesArray,0,0)
       this.artLayer = map.createLayer("artLayer",tilesArray,0,0)
       this.exitLayer = map.createLayer("thingsLayer",tilesArray,0,0)
+      this.borderLayer = map.createLayer("borderLayer",tilesArray,0,0);
+
   
       //objectLayer
       let start = map.findObject("objectLayer", obj => obj.name === "start");
@@ -142,14 +144,15 @@ class level2 extends Phaser.Scene {
         repeat: -1,
       });
       
-    this.enemy1 = this.add.sprite(100,550,'robber').play('robber-right')
-    this.enemy2 = this.add.sprite(1250,80,'robber').play('robber-left')
-    this.enemy3 = this.add.sprite(650,550,'robber').play('robber-right')
-    this.enemy4 = this.add.sprite(100,300,'robber').play('robber-right')
+    this.enemy1 = this.physics.add.sprite(120,650,'robber').play('robber-right')
+    this.enemy2 = this.physics.add.sprite(1250,100,'robber').play('robber-left')
+    this.enemy3 = this.physics.add.sprite(650,650,'robber').play('robber-right')
+    this.enemy4 = this.physics.add.sprite(120,400,'robber').play('robber-right')
+    this.enemies = [this.enemy1, this.enemy2, this.enemy3, this.enemy4];
 
     this.tweens.add({
         targets: this.enemy1,
-        y: 650,
+        y: 800,
         flipY: false,
         yoyo: true,
         duration: 2000,
@@ -180,6 +183,18 @@ class level2 extends Phaser.Scene {
         repeat: -1,
     })
 
+    this.borderLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.borderLayer);
+
+    this.wallLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.wallLayer);
+
+    this.artLayer.setCollisionByExclusion(-1, true);
+    this.physics.add.collider(this.player,this.artLayer);
+
+    // this.thingsLayer.setCollisionByExclusion(-1, true);
+    // this.physics.add.collider(this.player,this.thingsLayer);
+
 // livebar
  // Call to update inventory items
  this.time.addEvent({
@@ -192,15 +207,14 @@ class level2 extends Phaser.Scene {
 // start another scene in parallel
 this.scene.launch("showInventory");
 
-
-// Call globalFunction globalHitFire on overlap
- this.physics.add.overlap(
+this.physics.add.overlap(
   this.player,
-  [this.enemy1, this.enemy2, this.enemy3, this.enemy4],
-  globalHitFire,
+  this.enemies,
+  this.playerHitByEnemy,
   null,
   this
 );
+
 
   // player shoot
     // knive animation
@@ -218,10 +232,14 @@ this.scene.launch("showInventory");
     ). play("knifeAnim")    
 
     this.bullet.setVisible(false);
+    this.bullet.body.setEnable(false); 
+
 
     let attackLeft = this.input.keyboard.addKey("z");
     let attackRight = this.input.keyboard.addKey("x");
-
+    let attackUp = this.input.keyboard.addKey("a");
+    let attackDown = this.input.keyboard.addKey("s");
+    
     attackLeft.on(
       "down",
       function () {
@@ -237,6 +255,14 @@ this.scene.launch("showInventory");
       },
       this
     );
+
+    attackUp.on("down", function () {
+      this.attackUp();
+    }, this);
+    
+    attackDown.on("down", function () {
+      this.attackDown();
+    }, this);
 
     this.physics.add.overlap(
       this.bullet,
@@ -272,7 +298,7 @@ key1.on('down', function(){
     } /////////////////// end of create //////////////////////////////
   
     update() {
-      this.angle1 = Phaser.Math.Angle.BetweenPoints(this.enemy1, this.player);
+      // this.angle1 = Phaser.Math.Angle.BetweenPoints(this.enemy1, this.player);
       let speed = 300;
       this.player.setVelocity(0);
   
@@ -306,7 +332,8 @@ key1.on('down', function(){
   }
   attackLeft() {
     
-    console.log("attack left");
+    // console.log("attack left");
+    this.shootSnd.play()
 
     this.bullet.x = this.player.x;
     this.bullet.y = this.player.y;
@@ -319,7 +346,8 @@ key1.on('down', function(){
   }
   attackRight() {
     
-    console.log("attack right");
+    // console.log("attack right");
+    this.shootSnd.play()
 
     this.bullet.x = this.player.x;
     this.bullet.y = this.player.y;
@@ -330,24 +358,115 @@ key1.on('down', function(){
 	  // speed of the bullet
     this.bullet.body.setVelocityX(500);
   }
-  killEnemy(player, enemy){
-    console.log("bullet hit enemy");
-    if (window.heart == 0){
-	    console.log("*** player gameOver");
-      this.scene.start("gameOver", { "level":1});
+
+  attackUp() {
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+    this.bullet.body.setVelocityY(-500);
+    this.time.delayedCall(1000, () => {
+      this.bullet.setVisible(false);
+      this.bullet.body.setEnable(false);
+      this.bullet.setVelocity(0, 0);
+    }, [], this);
+  }
+  attackDown() {
+    this.shootSnd.play()
+
+    this.bullet.x = this.player.x;
+    this.bullet.y = this.player.y;
+    this.bullet.setVisible(true);
+    this.bullet.body.setEnable(true);
+    this.bullet.body.setVelocityY(500);
+    this.time.delayedCall(1000, () => {
+      this.bullet.setVisible(false);
+      this.bullet.body.setEnable(false);
+      this.bullet.setVelocity(0, 0);
+    }, [], this);
+  }
+
+ playerHitByEnemy(player, enemy) {
+  this.hurtSnd.play()
+
+      if (this.isPlayerInvulnerable) return;
+      
+      if (window.heart > 0) {
+        window.heart -= 1;
+        updateInventory.call(this);
+
+        this.cameras.main.shake(300);
+
+        this.invEvent = function(event, data) {
+          const showInventoryScene = this.scene.get('showInventory');
+          if (showInventoryScene) {
+              showInventoryScene.events.emit(event, data);
+          }
+      }.bind(this);
+
+        this.invEvent("inventory", { heart: window.heart });
+        
+        this.isPlayerInvulnerable = true;
+        player.setTint(0xff0000);
+        
+        const angle = Phaser.Math.Angle.Between(enemy.x, enemy.y, player.x, player.y);
+        const knockbackForce = 200;
+        player.setVelocity(
+          Math.cos(angle) * knockbackForce,
+          Math.sin(angle) * knockbackForce
+        );
+        this.time.delayedCall(1000, () => {
+          this.isPlayerInvulnerable = false;
+          player.clearTint();
+        });
+    
+      }
+      
+      if (window.heart <= 0) {
+        console.log("*** player gameOver");
+        this.scene.stop("level2"); 
+        this.scene.start("gameOver");
+        console.log("*** gameOver scene started");
+
+      }
     }
-    
+
+    killenemy(bullet, enemy){
+      console.log("bullet hit enemy");
+      this.cameras.main.shake(300);    
+      enemy.disableBody (true, true);
+      this.enemiesDefeated++;
+      if (this.enemiesDefeated >= this.totalEnemies) {
+        this.allEnemiesDefeated();
+      }
+    }
+  
     // play a sound
-    // this.hitSnd.play();
-
-    // shake screen
-    this.cameras.main.shake(300);    
-
-    // disable enemy body
-    enemy.disableBody (true, true);
- }
-}
+    // this.hitSnd.play()
     
+    allEnemiesDefeated() {
+      console.log("All enemies defeated! Proceeding to next level...");
+      this.cameras.main.flash(300, 255, 255, 255);
+      
+      this.time.delayedCall(1000, () => {
+        this.scene.start("level3SCN", {
+          playerHealth: window.heart,
+          inventory: this.inventory
+        });
+      });
+    }
+
+    // Function to jump to level3
+ level3SCN(player, enemy) {
+  // this.music.stop{}
+  this.scene.start("level3SCN", {
+    player: player,
+    inventory: this.inventory,
+  });
+}
+}
     
   /////////////////// end of update //////////////////////////////
   

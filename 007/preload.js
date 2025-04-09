@@ -1,18 +1,20 @@
-class level1SCN extends Phaser.Scene {
+class preload extends Phaser.Scene {
 
-    constructor ()
-    {
-        super({ key: 'level1SCN' });
+    constructor() {
+        super({
+            key: 'preload'
+        })
     }
-
     preload() {
 
-        // Images
-         this.load.image("lvlSCN", "asset/level1scn.jpg");
+        // bgm
+        this.load.audio('shoot', 'asset/submachine-gun-79846.mp3');
+        this.load.audio('win', 'asset/win.mp3');
+
     }
 
     create () {
-    const howplay = this.add.image(0, 0, 'lvlSCN');
+    const howplay = this.add.image(0, 0, 'HOWplay');
 
 const scaleX = this.game.config.width / howplay.width;
 const scaleY = this.game.config.height / howplay.height;
@@ -27,8 +29,8 @@ howplay.setPosition(this.game.config.width / 2, this.game.config.height /2);
         var spaceDown = this.input.keyboard.addKey('SPACE');
         
         spaceDown.on('down', function(){
-            console.log("Spacebar pressed, go to level1");
-            this.scene.start("level1"); 
+            console.log("Spacebar pressed, go to level1SCN");
+            this.scene.start("level1SCN"); 
         }, this );
 
     }

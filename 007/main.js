@@ -5,6 +5,8 @@ class main extends Phaser.Scene {
             key: 'main'
         });
 
+        window.heart = 3; //starting with 3 hearts
+
         // Put global variable here
     }
 
@@ -15,16 +17,28 @@ class main extends Phaser.Scene {
         // Preload any images here
          // Images
          this.load.image("intro", "asset/mygame.jpg");
-
+         this.load.audio('impossible', 'asset/impossible-291820.mp3');
         // Preload any sound and music here
         // this.load.audio('ping', 'assets/ping.mp3');
         // this.load.audio('bgMusic', 'assets/bgMusic.mp3');
     }
 
     create() {
-
         console.log('*** main scene');
+        const howplay = this.add.image(0, 0, 'intro');
 
+        const scaleX = this.game.config.width / howplay.width;
+        const scaleY = this.game.config.height / howplay.height;
+        howplay.setScale(scaleX, scaleY);
+        
+        howplay.setOrigin(0.5);
+        howplay.setPosition(this.game.config.width / 2, this.game.config.height /2);
+
+        // turn on loop, adjust the volume
+this.bgMusic = this.sound.add("impossible",{loop: true}).setVolume(0.3);
+// start the background musicc
+this.bgMusic.play();
+        
         
 // Check for spacebar or any key here
 var spaceDown = this.input.keyboard.addKey('SPACE');
@@ -72,11 +86,11 @@ key1.on('down', function(){
         }, this);
 
 
-        // Add any text in the main page
-        this.add.text(70, 400, 'Press spacebar to continue', {
-            font: '30px Courier',
-            fill: '#FFFFFF'
-        });
+        // // Add any text in the main page
+        // this.add.text(70, 400, 'Press spacebar to continue', {
+        //     font: '30px Courier',
+        //     fill: '#FFFFFF'
+        // });
 
 
         // Create all the game animations here

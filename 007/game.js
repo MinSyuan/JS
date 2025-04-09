@@ -16,9 +16,8 @@ let config = {
     },
     backgroundColor: "#00015c",
     pixelArt: true,
-    scene: [main, story, task, howplay, level1SCN, level1, level2, level3, gameOver, showInventory]
+    scene: [main, story, task, howplay, preload, level1SCN, level2SCN, level3SCN, level1, level2,  level3, gameOver, CTA , showInventory]
   };
   
 let game = new Phaser.Game(config);
 window.heart = 3
-window.key = 0
